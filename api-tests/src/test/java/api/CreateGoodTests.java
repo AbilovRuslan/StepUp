@@ -5,6 +5,7 @@ import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import rest.assertions.BasicApiAssert;
@@ -442,5 +443,29 @@ public class CreateGoodTests {
 
         BasicApiAssert.assertThat(response)
                 .statusCodeIsEquals(401);
+    }
+
+    @AfterEach
+    void cleanUp() {
+        try {
+            Response listResponse = RestApiBuilder.getBuilder()
+                    .addAuth("admin", "secret123")
+                    .getSpec()
+                    .get(Urls.LIST);
+
+            List<Integer> ids = listResponse.jsonPath().getList("id");
+
+            if (ids != null && !ids.isEmpty()) {
+                for (Integer id : ids) {
+                    RestApiBuilder.getBuilder()
+                            .addAuth("admin", "secret123")
+                            .getSpec()
+                            .pathParam("id", id)
+                            .delete(Urls.ID);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Cleanup skipped: " + e.getMessage());
+        }
     }
 }

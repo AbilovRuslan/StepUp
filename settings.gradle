@@ -6,3 +6,4 @@ rootProject.name = 'StepUp'
 
 
 include 'api-tests'
+include 'selenium-selenide'
