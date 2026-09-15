@@ -1,3 +1,4 @@
+import config.ConfigReader;
 import org.junit.jupiter.api.Test;
 
 import static com.codeborne.selenide.Condition.*;
@@ -7,7 +8,7 @@ public class CartRemoveSelenide extends BaseTest {
 
     @Test
     public void removeProductFromCart() {
-        var product = $("div[data-name='Стакан']");
+        var product = $("div[data-name='" + ConfigReader.getProductName() + "']");
         var cartButton = $("#open-cart-btn");
         actions().dragAndDrop(product, cartButton).perform();
 

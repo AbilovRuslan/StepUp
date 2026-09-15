@@ -1,4 +1,4 @@
-
+import config.ConfigReader;
 import org.junit.jupiter.api.Test;
 
 import static com.codeborne.selenide.Condition.*;
@@ -9,7 +9,7 @@ public class DragAndDropSelenide extends BaseTest {
     @Test
     public void dragProductToCart() {
         // Находим карточку товара и кнопку корзины
-        var product = $("div[data-name='Стакан']");
+        var product = $("div[data-name='" + ConfigReader.getProductName() + "']");
         var cartButton = $("#open-cart-btn");
 
         // drag-and-drop
@@ -17,4 +17,3 @@ public class DragAndDropSelenide extends BaseTest {
 
         $("#cart-count").shouldHave(text("1"));
     }
-}
