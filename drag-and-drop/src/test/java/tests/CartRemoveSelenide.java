@@ -1,3 +1,5 @@
+package tests;
+
 import config.ConfigReader;
 import org.junit.jupiter.api.Test;
 

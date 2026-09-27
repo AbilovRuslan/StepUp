@@ -1,3 +1,5 @@
+package tests;
+
 import config.ConfigReader;
 import org.junit.jupiter.api.Test;
 
@@ -17,3 +19,4 @@ public class DragAndDropSelenide extends BaseTest {
 
         $("#cart-count").shouldHave(text("1"));
     }
+}
