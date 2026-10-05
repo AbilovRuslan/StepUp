@@ -26,16 +26,16 @@ public class ConfigReader {
         return PROPERTIES.getProperty("stand.url");
     }
 
-    public static String getLoggingMode() {
-        return PROPERTIES.getProperty("logging.mode");
-    }
-
     public static String getApiUrl() {
         return PROPERTIES.getProperty("api.url");
     }
 
     public static int getElementTimeout() {
         return Integer.parseInt(PROPERTIES.getProperty("element.timeout"));
+    }
+
+    public static String getLoggingMode() {
+        return PROPERTIES.getProperty("logging.mode");
     }
 
     public static String getAdminUsername() {

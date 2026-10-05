@@ -2,41 +2,41 @@ package pages;
 
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import io.qameta.allure.Step;
 
 import static com.codeborne.selenide.Selenide.*;
 
 public class MainPage {
 
-
+    // ==================== ЭЛЕМЕНТЫ ====================
 
     public SelenideElement adminLink = $("a[href='/admin']");
     public SelenideElement cartButton = $("#open-cart-btn");
     public SelenideElement cartCount = $("#cart-count");
     public ElementsCollection products = $$("div.product-card");
-
-    public SelenideElement cartModal = $("#cartModal");
     public ElementsCollection cartItems = $$("#cart-items .cart-item");
     public SelenideElement totalPrice = $("#total-price");
     public SelenideElement makeOrderButton = $("#makeOrder");
+    public SelenideElement toastContainer = $("#toast-container");
 
-    //  МЕТОДЫ
+    // ==================== МЕТОДЫ ====================
 
-    // 1. Перейти в админку
+    @Step("Перейти в админку")
     public void openAdmin() {
         adminLink.click();
     }
 
-    // 2. Открыть корзину
+    @Step("Открыть корзину")
     public void openCart() {
         cartButton.click();
     }
 
-    // 3. Добавить товар кнопкой "В корзину"
+    @Step("Добавить товар '{name}' в корзину")
     public void addProductToCart(String name) {
         $("div[data-name='" + name + "'] button[data-action='add-to-cart']").click();
     }
 
-    // 4. Добавить товар drag-and-drop
+    @Step("Перетащить товар '{name}' в корзину")
     public void dragProductToCart(String name) {
         actions().dragAndDrop(
                 $("div[data-name='" + name + "']"),
@@ -44,25 +44,23 @@ public class MainPage {
         ).perform();
     }
 
-    // 5. Увеличить количество
+    @Step("Увеличить количество товара '{name}'")
     public void increaseQuantity(String name) {
         $("div[data-name='" + name + "'] button[data-action='qty-change'][data-step='1']").click();
     }
 
-    // 6. Уменьшить количество
+    @Step("Уменьшить количество товара '{name}'")
     public void decreaseQuantity(String name) {
         $("div[data-name='" + name + "'] button[data-action='qty-change'][data-step='-1']").click();
     }
 
-    // 7. Удалить первый товар из корзины
+    @Step("Удалить первый товар из корзины")
     public void removeFirstItemFromCart() {
         $x("//div[@id='cart-items']//div[contains(@id, 'cart-item')]/button[last()]").click();
     }
 
-    // 8. Оформить заказ
+    @Step("Оформить заказ")
     public void makeOrder() {
         makeOrderButton.click();
     }
-
-    public SelenideElement toastContainer = $("#toast-container");
 }

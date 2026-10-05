@@ -1,25 +1,29 @@
 package tests;
 
 import config.ConfigReader;
+import io.qameta.allure.*;
 import org.junit.jupiter.api.Test;
+import pages.MainPage;
+import pages.asserts.MainPageAssert;
 
-import static com.codeborne.selenide.Condition.*;
-import static com.codeborne.selenide.Selenide.*;
-
+@Epic("SmartShop")
+@Feature("Корзина")
 public class CartRemoveSelenide extends BaseTest {
 
+    private final MainPage mainPage = new MainPage();
+
     @Test
+    @Story("Удаление из корзины")
     public void removeProductFromCart() {
-        var product = $("div[data-name='" + ConfigReader.getProductName() + "']");
-        var cartButton = $("#open-cart-btn");
-        actions().dragAndDrop(product, cartButton).perform();
+        String name = ConfigReader.getProductName();
 
-        cartButton.click();
-        $("#cart-items .cart-item").shouldBe(visible);
+        mainPage.dragProductToCart(name);
+        mainPage.openCart();
 
-        // Удаление
-        $x("//div[@id='cart-items']//div[contains(@id, 'cart-item')]/button[last()]").click();
+        new MainPageAssert().cartItemVisible(name);
 
-        $("#cart-items .cart-item").shouldBe(not(visible));
+        mainPage.removeFirstItemFromCart();
+
+        new MainPageAssert().cartItemNotVisible(name);
     }
 }

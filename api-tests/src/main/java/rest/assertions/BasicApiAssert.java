@@ -1,9 +1,11 @@
 package rest.assertions;
 
+import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import org.assertj.core.api.Assertions;
 
 public class BasicApiAssert {
+
     private final Response actual;
 
     private BasicApiAssert(Response response) {
@@ -14,6 +16,7 @@ public class BasicApiAssert {
         return new BasicApiAssert(response);
     }
 
+    @Step("Проверить HTTP статус-код: ожидается {expected}")
     public BasicApiAssert statusCodeIsEquals(int expected) {
         Assertions.assertThat(actual.statusCode())
                 .as("Status code must be %d".formatted(expected))
@@ -21,6 +24,7 @@ public class BasicApiAssert {
         return this;
     }
 
+    @Step("Проверить, что поле '{path}' существует")
     public BasicApiAssert fieldIsExists(String path) {
         Assertions.assertThat(actual.jsonPath().getString(path))
                 .as("Field with path %s must be exists!".formatted(path))
@@ -28,6 +32,7 @@ public class BasicApiAssert {
         return this;
     }
 
+    @Step("Проверить, что поле '{path}' = '{value}'")
     public BasicApiAssert fieldIsEquals(String path, String value) {
         Assertions.assertThat(actual.jsonPath().getString(path))
                 .as("Field with path %s must be equals '%s'!".formatted(path, value))
@@ -35,6 +40,7 @@ public class BasicApiAssert {
         return this;
     }
 
+    @Step("Проверить, что заголовок '{header}' = '{value}'")
     public BasicApiAssert headerIsEqual(String header, String value) {
         Assertions.assertThat(actual.getHeader(header))
                 .as("Header %s must be equal '%s'".formatted(header, value))

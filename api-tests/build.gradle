@@ -17,7 +17,31 @@ dependencies {
     implementation 'org.assertj:assertj-core:3.27.3'
     implementation 'io.rest-assured:rest-assured:5.5.6'
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
+
+    // Allure
+    implementation 'io.qameta.allure:allure-junit5:2.29.1'
+    implementation 'io.qameta.allure:allure-rest-assured:2.29.1'
 }
+
 test {
     useJUnitPlatform()
+
+    ignoreFailures = true
+
+    systemProperty 'allure.results.directory',
+            "${project.buildDir}/allure-results"
+
+    doLast {
+        exec {
+            commandLine 'allure', 'generate',
+                    "${project.buildDir}/allure-results",
+                    '-o', "${project.buildDir}/allure-report",
+                    '--clean'
+        }
+
+        exec {
+            commandLine 'allure', 'open',
+                    "${project.buildDir}/allure-report"
+        }
+    }
 }

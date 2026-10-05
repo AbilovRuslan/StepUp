@@ -1,22 +1,25 @@
 package tests;
 
 import config.ConfigReader;
+import io.qameta.allure.*;
 import org.junit.jupiter.api.Test;
+import pages.MainPage;
+import pages.asserts.MainPageAssert;
 
-import static com.codeborne.selenide.Condition.*;
-import static com.codeborne.selenide.Selenide.*;
-
+@Epic("SmartShop")
+@Feature("Корзина")
 public class DragAndDropSelenide extends BaseTest {
 
+    private final MainPage mainPage = new MainPage();
+
     @Test
+    @Story("Drag-and-Drop")
+    @Description("Перетащить товар в корзину и проверить счётчик")
     public void dragProductToCart() {
-        // Находим карточку товара и кнопку корзины
-        var product = $("div[data-name='" + ConfigReader.getProductName() + "']");
-        var cartButton = $("#open-cart-btn");
+        String name = ConfigReader.getProductName();
 
-        // drag-and-drop
-        actions().dragAndDrop(product, cartButton).perform();
+        mainPage.dragProductToCart(name);
 
-        $("#cart-count").shouldHave(text("1"));
+        new MainPageAssert().cartCountEquals("1");
     }
 }
