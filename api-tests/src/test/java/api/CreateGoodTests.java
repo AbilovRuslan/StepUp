@@ -1,283 +1,262 @@
 package api;
 
+import config.ConfigReader;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 import rest.assertions.BasicApiAssert;
-import rest.endpoints.GoodsEndpoint;
+import rest.endpoints.GoodsApi;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Epic("API")
 @Feature("Товары")
 public class CreateGoodTests {
 
+    private static final Set<Long> createdGoods = ConcurrentHashMap.newKeySet();
+
     record GoodRequest(String name, double price) {}
     record GoodPatch(String name, double price) {}
 
-    // ===== 1.1 given-when-then =====
-
     @Test
+    @Tag("smoke")
     @DisplayName("GET /goods/list через given-when-then")
     void testGivenWhenThen() {
-        Response response = GoodsEndpoint.getListAuthorized();
-
-        BasicApiAssert.assertThat(response)
-                .statusCodeIsEquals(200);
+        Response response = GoodsApi.getListAuthorized();
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusOk());
     }
-
 
     @Test
     @DisplayName("GET /goods/list через RequestSpecification")
     void testWithRequestSpec() {
-        Response response = GoodsEndpoint.getListAuthorized();
-
-        BasicApiAssert.assertThat(response)
-                .statusCodeIsEquals(200);
+        Response response = GoodsApi.getListAuthorized();
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusOk());
     }
-
 
     @Test
     @DisplayName("Создать товар и получить его через REST Assured")
     void testCreateAndCheckViaRestAssured() {
         String name = "Good_" + System.currentTimeMillis();
-        GoodRequest good = new GoodRequest(name, 99.99);
+        GoodRequest good = new GoodRequest(name, ConfigReader.getPriceDefault());
 
-        Response createResponse = GoodsEndpoint.create(good);
-        BasicApiAssert.assertThat(createResponse).statusCodeIsEquals(200);
+        Response createResponse = GoodsApi.create(good);
+        BasicApiAssert.assertThat(createResponse).statusCodeIsEquals(ConfigReader.getStatusOk());
 
         long id = createResponse.jsonPath().getLong("data.id");
+        trackCreated(id);
 
-        Response response = GoodsEndpoint.getById(id);
+        Response response = GoodsApi.getById(id);
         BasicApiAssert.assertThat(response)
-                .statusCodeIsEquals(200)
+                .statusCodeIsEquals(ConfigReader.getStatusOk())
                 .fieldIsEquals("name", name);
     }
-
 
     @Test
     @DisplayName("Создать товар и проверить через AssertJ")
     void testCreateAndCheckViaAssertJ() {
         String name = "AssertJGood_" + System.currentTimeMillis();
-        GoodRequest good = new GoodRequest(name, 49.99);
+        GoodRequest good = new GoodRequest(name, ConfigReader.getPriceLow());
 
-        Response createResponse = GoodsEndpoint.create(good);
+        Response createResponse = GoodsApi.create(good);
         BasicApiAssert.assertThat(createResponse)
-                .statusCodeIsEquals(200)
+                .statusCodeIsEquals(ConfigReader.getStatusOk())
                 .fieldIsExists("data.id");
 
-        Response listResponse = GoodsEndpoint.getListAuthorized();
-        BasicApiAssert.assertThat(listResponse).statusCodeIsEquals(200);
+        long id = createResponse.jsonPath().getLong("data.id");
+        trackCreated(id);
+
+        Response listResponse = GoodsApi.getListAuthorized();
+        BasicApiAssert.assertThat(listResponse).statusCodeIsEquals(ConfigReader.getStatusOk());
 
         List<String> names = listResponse.jsonPath().getList("goods.name");
         org.assertj.core.api.Assertions.assertThat(names).contains(name);
     }
 
-
     @Test
+    @Tag("smoke")
     @DisplayName("POST /goods/add создаёт товар")
     void addNewGood() {
-        GoodRequest good =
-                new GoodRequest("Ластик_" + System.currentTimeMillis(), 3.3);
+        GoodRequest good = new GoodRequest(
+                "Ластик_" + System.currentTimeMillis(),
+                ConfigReader.getPriceCheap()
+        );
 
-        Response response = GoodsEndpoint.create(good);
-
+        Response response = GoodsApi.create(good);
         BasicApiAssert.assertThat(response)
-                .statusCodeIsEquals(200)
+                .statusCodeIsEquals(ConfigReader.getStatusOk())
                 .fieldIsExists("data.id")
-                .fieldIsEquals("message", "success");
+                .fieldIsEquals("message", ConfigReader.getMessageSuccess());
+
+        trackCreated(response.jsonPath().getLong("data.id"));
     }
 
     @Test
     @DisplayName("POST /goods/add без авторизации возвращает 401")
     void testAddGoodUnauthorized() {
-        GoodRequest good =
-                new GoodRequest("НовыйТовар_" + System.currentTimeMillis(), 99.99);
-
-        Response response = GoodsEndpoint.createUnauthorized(good);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(401);
+        GoodRequest good = new GoodRequest(
+                "НовыйТовар_" + System.currentTimeMillis(),
+                ConfigReader.getPriceDefault()
+        );
+        Response response = GoodsApi.createUnauthorized(good);
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusUnauthorized());
     }
 
     @Test
     @DisplayName("POST /goods/add с дублирующимся именем возвращает 400")
     void testAddGoodDuplicateName() {
-        GoodRequest good =
-                new GoodRequest("Дубликат_" + System.currentTimeMillis(), 50.0);
+        GoodRequest good = new GoodRequest(
+                "Дубликат_" + System.currentTimeMillis(),
+                ConfigReader.getPriceMid()
+        );
 
-        GoodsEndpoint.create(good);
-        Response response = GoodsEndpoint.create(good);
+        Response first = GoodsApi.create(good);
+        trackCreated(first.jsonPath().getLong("data.id"));
 
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(400);
+        Response response = GoodsApi.create(good);
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusBadRequest());
     }
-
 
     @Test
     @DisplayName("GET /goods/list возвращает 200")
     void testGetGoodsList() {
-        Response response = GoodsEndpoint.getListAuthorized();
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(200);
+        Response response = GoodsApi.getListAuthorized();
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusOk());
     }
 
     @Test
-    @DisplayName("GET /goods/list без авторизации возвращает 401")
+    @DisplayName("GET /goods/list без авторизации возвращает 200 (эндпоинт публичный)")
     void testGetGoodsListUnauthorized() {
-        Response response = GoodsEndpoint.getListUnauthorized();
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(401);
+        Response response = GoodsApi.getListUnauthorized();
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusOk());
     }
-
 
     @Test
     @DisplayName("GET /goods/{id} возвращает товар")
     void testGetGoodById() {
         String name = "ТоварДляПроверки_" + System.currentTimeMillis();
-        GoodRequest good = new GoodRequest(name, 99.99);
+        GoodRequest good = new GoodRequest(name, ConfigReader.getPriceDefault());
 
-        Response createResponse = GoodsEndpoint.create(good);
+        Response createResponse = GoodsApi.create(good);
         long id = createResponse.jsonPath().getLong("data.id");
+        trackCreated(id);
 
-        Response response = GoodsEndpoint.getById(id);
-
+        Response response = GoodsApi.getById(id);
         BasicApiAssert.assertThat(response)
-                .statusCodeIsEquals(200)
+                .statusCodeIsEquals(ConfigReader.getStatusOk())
                 .fieldIsEquals("name", name);
     }
 
     @Test
     @DisplayName("GET /goods/{id} с несуществующим ID возвращает 404")
     void testGetGoodByIdNotFound() {
-        Response response = GoodsEndpoint.getById(999999);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(404);
+        Response response = GoodsApi.getById(ConfigReader.getNotFoundId());
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusNotFound());
     }
 
     @Test
     @DisplayName("GET /goods/{id} без авторизации возвращает 401")
     void testGetGoodByIdUnauthorized() {
-        Response response = GoodsEndpoint.getByIdUnauthorized(1);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(401);
+        Response response = GoodsApi.getByIdUnauthorized(ConfigReader.getUnauthorizedId());
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusUnauthorized());
     }
-
 
     @Test
     @DisplayName("PATCH /goods/{id} обновляет товар")
     void testPatchGood() {
-        GoodRequest good =
-                new GoodRequest("ДляОбновления_" + System.currentTimeMillis(), 50.0);
+        GoodRequest good = new GoodRequest(
+                "ДляОбновления_" + System.currentTimeMillis(),
+                ConfigReader.getPriceMid()
+        );
 
-        Response createResponse = GoodsEndpoint.create(good);
+        Response createResponse = GoodsApi.create(good);
         long id = createResponse.jsonPath().getLong("data.id");
+        trackCreated(id);
 
         String newName = "ОбновлённыйТовар_" + System.currentTimeMillis();
-        GoodPatch patch = new GoodPatch(newName, 150.0);
+        GoodPatch patch = new GoodPatch(newName, ConfigReader.getPriceUpdated());
 
-        Response response = GoodsEndpoint.patch(id, patch);
-
+        Response response = GoodsApi.patch(id, patch);
         BasicApiAssert.assertThat(response)
-                .statusCodeIsEquals(200)
+                .statusCodeIsEquals(ConfigReader.getStatusOk())
                 .fieldIsEquals("name", newName);
     }
 
     @Test
     @DisplayName("PATCH /goods/{id} с невалидным телом возвращает 400")
     void testPatchGoodBadRequest() {
-        GoodRequest good =
-                new GoodRequest("ДляПатча_" + System.currentTimeMillis(), 50.0);
-
-        Response createResponse = GoodsEndpoint.create(good);
+        GoodRequest good = new GoodRequest(
+                "ДляПатча_" + System.currentTimeMillis(),
+                ConfigReader.getPriceMid()
+        );
+        Response createResponse = GoodsApi.create(good);
         long id = createResponse.jsonPath().getLong("data.id");
+        trackCreated(id);
 
-        String invalidPatch = "{\"price\": \"не число\"}";
-
-        Response response = GoodsEndpoint.patch(id, invalidPatch);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(400);
+        Response response = GoodsApi.patch(id, ConfigReader.getInvalidPatchBody());
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusBadRequest());
     }
 
     @Test
     @DisplayName("PATCH /goods/{id} с несуществующим ID возвращает 404")
     void testPatchGoodNotFound() {
-        GoodPatch patch = new GoodPatch("Неважно", 100.0);
-
-        Response response = GoodsEndpoint.patch(999999, patch);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(404);
+        GoodPatch patch = new GoodPatch(ConfigReader.getPrefixNevazhno(), 100.0);
+        Response response = GoodsApi.patch(ConfigReader.getNotFoundId(), patch);
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusNotFound());
     }
 
     @Test
     @DisplayName("PATCH /goods/{id} без авторизации возвращает 401")
     void testPatchGoodUnauthorized() {
-        GoodPatch patch = new GoodPatch("Неважно", 100.0);
-
-        Response response = GoodsEndpoint.patchUnauthorized(1, patch);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(401);
+        GoodPatch patch = new GoodPatch(ConfigReader.getPrefixNevazhno(), 100.0);
+        Response response = GoodsApi.patchUnauthorized(ConfigReader.getUnauthorizedId(), patch);
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusUnauthorized());
     }
-
 
     @Test
     @DisplayName("DELETE /goods/{id} удаляет товар")
     void testDeleteGood() {
-        GoodRequest good =
-                new GoodRequest("ДляУдаления_" + System.currentTimeMillis(), 30.0);
-
-        Response createResponse = GoodsEndpoint.create(good);
+        GoodRequest good = new GoodRequest(
+                "ДляУдаления_" + System.currentTimeMillis(),
+                ConfigReader.getPriceDelete()
+        );
+        Response createResponse = GoodsApi.create(good);
         long id = createResponse.jsonPath().getLong("data.id");
+        // не трекаем — удалим сами в тесте
 
-        Response response = GoodsEndpoint.delete(id);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(200);
+        Response response = GoodsApi.delete(id);
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusOk());
     }
 
     @Test
     @DisplayName("DELETE /goods/{id} с несуществующим ID возвращает 404")
     void testDeleteGoodNotFound() {
-        Response response = GoodsEndpoint.delete(999999);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(404);
+        Response response = GoodsApi.delete(ConfigReader.getNotFoundId());
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusNotFound());
     }
 
     @Test
     @DisplayName("DELETE /goods/{id} без авторизации возвращает 401")
     void testDeleteGoodUnauthorized() {
-        Response response = GoodsEndpoint.deleteUnauthorized(1);
-
-        BasicApiAssert.assertThat(response).statusCodeIsEquals(401);
+        Response response = GoodsApi.deleteUnauthorized(ConfigReader.getUnauthorizedId());
+        BasicApiAssert.assertThat(response).statusCodeIsEquals(ConfigReader.getStatusUnauthorized());
     }
 
+    // ===== Cleanup: удаляем ТОЛЬКО созданные этим классом товары =====
 
     @AfterEach
     void cleanUp() {
-        try {
-            Response listResponse = GoodsEndpoint.getListAuthorized();
-            List<Integer> ids = listResponse.jsonPath().getList("goods.id");
-
-            if (ids != null && !ids.isEmpty()) {
-                for (Integer id : ids) {
-                    GoodsEndpoint.delete(id);
-                }
+        for (Long id : createdGoods) {
+            try {
+                GoodsApi.delete(id);
+            } catch (Exception ignored) {
             }
-        } catch (Exception e) {
-            System.out.println("Cleanup skipped: " + e.getMessage());
         }
+        createdGoods.clear();
     }
 
-    @AfterAll
-    static void generateAndOpenAllureReport() throws Exception {
-        Process generate = new ProcessBuilder(
-                "/bin/zsh", "-lc",
-                "allure generate build/allure-results " +
-                        "-o build/allure-report --clean"
-        ).inheritIO().start();
-
-        generate.waitFor();
-
-        new ProcessBuilder(
-                "/bin/zsh", "-lc",
-                "allure open build/allure-report"
-        ).inheritIO().start();
+    private static void trackCreated(long id) {
+        createdGoods.add(id);
     }
 }

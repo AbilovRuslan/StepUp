@@ -10,38 +10,45 @@ repositories {
 }
 
 dependencies {
+    implementation project(':common')
+
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     implementation 'org.assertj:assertj-core:3.27.3'
     implementation 'io.rest-assured:rest-assured:5.5.6'
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
 
-    // Allure
     implementation 'io.qameta.allure:allure-junit5:2.29.1'
     implementation 'io.qameta.allure:allure-rest-assured:2.29.1'
 }
 
 test {
     useJUnitPlatform()
+    systemProperty 'allure.results.directory', "${project.buildDir}/allure-results"
+}
 
-    ignoreFailures = true
-
-    systemProperty 'allure.results.directory',
-            "${project.buildDir}/allure-results"
-
-    doLast {
-        exec {
-            commandLine 'allure', 'generate',
-                    "${project.buildDir}/allure-results",
-                    '-o', "${project.buildDir}/allure-report",
-                    '--clean'
-        }
-
-        exec {
-            commandLine 'allure', 'open',
-                    "${project.buildDir}/allure-report"
-        }
+tasks.register('smokeTest', Test) {
+    useJUnitPlatform {
+        includeTags 'smoke'
     }
+    systemProperty 'allure.results.directory', "${project.buildDir}/allure-results"
+}
+
+tasks.register('allureReport', Exec) {
+    group = 'verification'
+    description = 'Generate Allure report from test results'
+    dependsOn test
+    commandLine 'allure', 'generate',
+            "${project.buildDir}/allure-results",
+            '-o', "${project.buildDir}/allure-report",
+            '--clean'
+}
+
+tasks.register('allureOpen', Exec) {
+    group = 'verification'
+    description = 'Open Allure report in browser'
+    dependsOn 'allureReport'
+    commandLine 'allure', 'open', "${project.buildDir}/allure-report"
 }

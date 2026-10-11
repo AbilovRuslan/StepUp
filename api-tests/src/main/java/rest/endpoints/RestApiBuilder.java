@@ -1,5 +1,6 @@
 package rest.endpoints;
 
+import config.ConfigReader;
 import io.qameta.allure.Step;
 import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.specification.RequestSpecification;
@@ -10,18 +11,22 @@ public class RestApiBuilder {
 
     RequestSpecification spec;
 
-    private static final String BASIC_URL = "http://localhost:8080";
-    private static final String LOGIN = "admin";
-    private static final String PASS = "secret123";
-
-
     public RestApiBuilder() {
-        spec = given()
+        RequestSpecification base = given()
                 .filter(new AllureRestAssured())
-                .baseUri(BASIC_URL)
+                .baseUri(ConfigReader.getApiUrl())
                 .basePath(Urls.GOODS)
-                .log().all()
                 .relaxedHTTPSValidation();
+
+        String mode = ConfigReader.getLoggingMode();
+        if ("full".equalsIgnoreCase(mode)) {
+            base = base.log().all();
+        } else if ("validation".equalsIgnoreCase(mode)) {
+            base = base.log().ifValidationFails();
+        }
+        // "none" или другое — вообще без логирования
+
+        spec = base;
     }
 
     @Step("Добавить базовую авторизацию: {login}")

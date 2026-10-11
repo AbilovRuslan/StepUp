@@ -6,5 +6,7 @@ rootProject.name = 'StepUp'
 
 
 include 'api-tests'
-include 'selenium-selenide'
-include 'drag-and-drop'
+
+include 'ui-tests'
+
+include 'common'
