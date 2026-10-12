@@ -10,3 +10,5 @@ include 'api-tests'
 include 'ui-tests'
 
 include 'common'
+
+include 'tasks'
